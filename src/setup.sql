@@ -43,3 +43,44 @@ VALUES
 (3, 'Neighborhood Cleanup', 'Organize volunteers to clean public areas in the community.', 'Benin City', '2027-01-09'),
 (3, 'Senior Support Day', 'Provide practical assistance and companionship to senior residents.', 'Benin City', '2027-01-16'),
 (3, 'Youth Service Day', 'Coordinate youth volunteers for several community service activities.', 'Benin City', '2027-01-23');
+
+CREATE TABLE category (
+category_id SERIAL PRIMARY KEY,
+name VARCHAR(100) NOT NULL UNIQUE
+);
+
+CREATE TABLE project_category (
+project_id INTEGER NOT NULL,
+category_id INTEGER NOT NULL,
+PRIMARY KEY (project_id, category_id),
+CONSTRAINT fk_project_category_project
+FOREIGN KEY (project_id)
+REFERENCES service_project(project_id),
+CONSTRAINT fk_project_category_category
+FOREIGN KEY (category_id)
+REFERENCES category(category_id)
+);
+
+INSERT INTO category (name)
+VALUES
+('Community Development'),
+('Environment & Agriculture'),
+('Community Support');
+
+INSERT INTO project_category (project_id, category_id)
+VALUES
+(1, 1),
+(2, 1),
+(3, 1),
+(4, 1),
+(5, 1),
+(6, 2),
+(7, 2),
+(8, 2),
+(9, 2),
+(10, 2),
+(11, 3),
+(12, 3),
+(13, 3),
+(14, 3),
+(15, 3);
