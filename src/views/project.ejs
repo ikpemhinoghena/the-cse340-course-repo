@@ -1,0 +1,13 @@
+<%- include('partials/header') %>
+
+<main>
+    <h1><%= title %></h1>
+
+    <h2><%= project.title %></h2>
+    <p>Description: <%= project.description %></p>
+    <p>Date: <%= new Date(project.date).toLocaleDateString() %></p>
+    <p>Location: <%= project.location %></p>
+    <p>Organization: <a href="/organization/<%= project.organization_id %>"><%= project.organization_name %></a></p>
+</main>
+
+<%- include('partials/footer') %>
