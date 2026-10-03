@@ -12,7 +12,11 @@ router.get('/organizations', showOrganizationsPage);
 router.get('/organization/:id', showOrganizationDetailsPage);
 router.get('/new-organization', showNewOrganizationForm);
 router.get('/edit-organization/:id', showEditOrganizationForm);
-router.post('/edit-organization/:id', processEditOrganizationForm);
+router.post(
+    '/edit-organization/:id',
+    organizationValidation,
+    processEditOrganizationForm
+);
 router.post(
     '/new-organization',
     organizationValidation,
