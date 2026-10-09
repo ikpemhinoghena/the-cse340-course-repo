@@ -1,6 +1,6 @@
 import bcrypt from 'bcrypt';
 import { body, validationResult } from 'express-validator';
-import { createUser } from '../models/users.js';
+import { createUser, authenticateUser } from '../models/users.js';
 
 const userRegistrationValidation = [
     body('name')
@@ -47,4 +47,54 @@ const processUserRegistrationForm = async (req, res) => {
     }
 };
 
-export { userRegistrationValidation, showUserRegistrationForm, processUserRegistrationForm };
+const showLoginForm = (req, res) => {
+    // This GET has a new session after logout; never flash on the destroyed one.
+    if (req.query.loggedOut === '1') req.flash('success', 'You have been logged out successfully.');
+    res.render('login', { title: 'Login' });
+};
+
+const processLoginForm = async (req, res) => {
+    const { email, password } = req.body ?? {};
+    if (typeof email !== 'string' || typeof password !== 'string'
+        || !email.trim() || email.trim().length > 100 || !password
+        || Buffer.byteLength(password, 'utf8') > 72) {
+        req.flash('error', 'Invalid email or password.');
+        return res.redirect('/login');
+    }
+
+    try {
+        const user = await authenticateUser(email.trim().toLowerCase(), password);
+        if (!user) {
+            req.flash('error', 'Invalid email or password.');
+            return res.redirect('/login');
+        }
+        // Rotate the session before storing authenticated identity.
+        await new Promise((resolve, reject) => req.session.regenerate(error => error ? reject(error) : resolve()));
+        req.session.user = user;
+        req.flash('success', 'Login successful!');
+        await new Promise((resolve, reject) => req.session.save(error => error ? reject(error) : resolve()));
+        return res.redirect('/');
+    } catch {
+        if (!req.session) {
+            return res.status(500).send('Unable to log in right now. Please try again.');
+        }
+        delete req.session.user;
+        req.flash('error', 'Unable to log in right now. Please try again.');
+        return res.redirect('/login');
+    }
+};
+
+const processLogout = (req, res) => {
+    req.session.destroy(error => {
+        if (error) {
+            // No flash call: destroy may already have removed req.session.
+            return res.status(500).send('Unable to log out right now. Please try again.');
+        }
+        return res.redirect('/login?loggedOut=1');
+    });
+};
+
+export {
+    userRegistrationValidation, showUserRegistrationForm, processUserRegistrationForm,
+    showLoginForm, processLoginForm, processLogout
+};

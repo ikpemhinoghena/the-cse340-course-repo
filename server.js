@@ -31,6 +31,11 @@ app.use(session({
 }));
 
 // Use flash message middleware
+app.use((req, res, next) => {
+    res.locals.isLoggedIn = Boolean(req.session.user);
+    next();
+});
+
 app.use(flash);
 
 // Serve static files from the public directory

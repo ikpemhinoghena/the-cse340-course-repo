@@ -1,4 +1,5 @@
 import db from './db.js';
+import bcrypt from 'bcrypt';
 
 const createUser = async (name, email, passwordHash) => {
     const query = `
@@ -23,4 +24,25 @@ const createUser = async (name, email, passwordHash) => {
     }
 };
 
-export { createUser };
+const findUserByEmail = async (email) => {
+    try {
+        const result = await db.query(
+            'SELECT user_id, name, email, password_hash, role_id FROM users WHERE email = $1',
+            [email]
+        );
+        return result.rows[0] ?? null;
+    } catch {
+        throw new Error('Unable to authenticate user');
+    }
+};
+
+const verifyPassword = async (password, passwordHash) => bcrypt.compare(password, passwordHash);
+
+const authenticateUser = async (email, password) => {
+    const user = await findUserByEmail(email);
+    if (!user || !await verifyPassword(password, user.password_hash)) return null;
+    const { password_hash, ...safeUser } = user;
+    return safeUser;
+};
+
+export { createUser, findUserByEmail, verifyPassword, authenticateUser };
