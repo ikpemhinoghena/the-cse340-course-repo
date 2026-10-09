@@ -90,6 +90,20 @@ test('login and logout with real session middleware and a stubbed database', asy
         }
     });
 
+    await t.test('unauthenticated dashboard redirects with the required flash error', async () => {
+        const response = await request('/dashboard');
+        assert.equal(response.status, 302);
+        assert.equal(response.headers.get('location'), '/login');
+        const html = await (await request('/login')).text();
+        assert.match(html, /You must be logged in to access that page\./);
+    });
+
+    await t.test('unauthenticated home hides the dashboard link', async () => {
+        const response = await request('/');
+        assert.equal(response.status, 200);
+        assert.doesNotMatch(await response.text(), /My Dashboard|href="\/dashboard"/);
+    });
+
     await t.test('unexpected database errors are handled without details', async () => {
         failDatabase = true;
         const response = await request('/login', { email: row.email, password });
@@ -103,7 +117,7 @@ test('login and logout with real session middleware and a stubbed database', asy
     await t.test('successful login rotates the session and stores only the safe user', async () => {
         const oldCookie = cookie;
         const response = await request('/login', { email: ' TEST@EXAMPLE.INVALID ', password });
-        assert.equal(response.headers.get('location'), '/');
+        assert.equal(response.headers.get('location'), '/dashboard');
         assert.notEqual(cookie, oldCookie);
         const values = Object.values(await sessions());
         assert.equal(values.length, 1);
@@ -114,6 +128,28 @@ test('login and logout with real session middleware and a stubbed database', asy
         assert.match(html, /href="\/logout"/);
         assert.doesNotMatch(html, /href="\/(login|register)"/);
         assert.match(html, /href="\/organizations"/);
+    });
+
+    await t.test('authenticated dashboard renders only escaped name and email', async () => {
+        row.name = '<script>alert("test")</script>';
+        row.email = 'test+<tag>@example.invalid';
+        // Log in again to store the updated fixture in the session.
+        const login = await request('/login', { email: row.email, password });
+        assert.equal(login.headers.get('location'), '/dashboard');
+        const response = await request('/dashboard');
+        assert.equal(response.status, 200);
+        const html = await response.text();
+        assert.match(html, /<h1>Dashboard<\/h1>/);
+        assert.match(html, /&lt;script&gt;alert\(&#34;test&#34;\)&lt;\/script&gt;/);
+        assert.match(html, /test\+&lt;tag&gt;@example\.invalid/);
+        assert.doesNotMatch(html, /<script>|password_hash|role_id/);
+        assert.ok(!html.includes(passwordHash));
+    });
+
+    await t.test('authenticated home shows the dashboard link', async () => {
+        const response = await request('/');
+        assert.equal(response.status, 200);
+        assert.match(await response.text(), /<a href="\/dashboard">My Dashboard<\/a>/);
     });
 
     await t.test('logout destroys identity and flashes success on the new session', async () => {
@@ -129,5 +165,10 @@ test('login and logout with real session middleware and a stubbed database', asy
         assert.ok(Object.values(await sessions()).every(value => !value.user));
         const nextHtml = await (await request('/login')).text();
         assert.doesNotMatch(nextHtml, /You have been logged out successfully\./);
+        const dashboard = await request('/dashboard');
+        assert.equal(dashboard.status, 302);
+        assert.equal(dashboard.headers.get('location'), '/login');
+        const home = await (await request('/')).text();
+        assert.doesNotMatch(home, /My Dashboard|href="\/dashboard"/);
     });
 });

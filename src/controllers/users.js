@@ -73,7 +73,7 @@ const processLoginForm = async (req, res) => {
         req.session.user = user;
         req.flash('success', 'Login successful!');
         await new Promise((resolve, reject) => req.session.save(error => error ? reject(error) : resolve()));
-        return res.redirect('/');
+        return res.redirect('/dashboard');
     } catch {
         if (!req.session) {
             return res.status(500).send('Unable to log in right now. Please try again.');
@@ -94,7 +94,20 @@ const processLogout = (req, res) => {
     });
 };
 
+const requireLogin = (req, res, next) => {
+    if (!(req.session && req.session.user)) {
+        req.flash('error', 'You must be logged in to access that page.');
+        return res.redirect('/login');
+    }
+    next();
+};
+
+const showDashboard = (req, res) => {
+    const { name, email } = req.session.user;
+    res.render('dashboard', { title: 'Dashboard', name, email });
+};
+
 export {
     userRegistrationValidation, showUserRegistrationForm, processUserRegistrationForm,
-    showLoginForm, processLoginForm, processLogout
+    showLoginForm, processLoginForm, processLogout, requireLogin, showDashboard
 };
