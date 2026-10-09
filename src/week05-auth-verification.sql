@@ -15,8 +15,6 @@ BEGIN
 END;
 $$;
 
--- Capture only the ID inserted by this run, so cleanup cannot target
--- a preexisting user. The temporary table is removed at transaction end.
 CREATE TEMP TABLE week05_auth_test_user (
     user_id INTEGER PRIMARY KEY
 ) ON COMMIT DROP;
@@ -49,6 +47,4 @@ WHERE u.user_id = t.user_id
   AND u.email = 'week05-auth-verification-temp@example.invalid'
 RETURNING u.user_id, u.email;
 
--- Leave no persistent test records, even if the script is rerun.
--- PostgreSQL SERIAL sequences can still advance during rolled-back inserts.
 ROLLBACK;
