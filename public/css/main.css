@@ -208,6 +208,37 @@ footer p {
     }
 }
 
+.users-table-container {
+    overflow-x: auto;
+}
+
+.users-table {
+    width: 100%;
+    border-collapse: collapse;
+    text-align: left;
+}
+
+.users-table caption {
+    text-align: left;
+    padding-bottom: 1rem;
+}
+
+.users-table th,
+.users-table td {
+    padding: 0.8rem 1rem;
+    border-bottom: 1px solid #dce5df;
+    overflow-wrap: anywhere;
+}
+
+.users-table th {
+    background-color: #12372a;
+    color: #ffffff;
+}
+
+.users-table tbody tr:nth-child(even) {
+    background-color: #f4f7f6;
+}
+
 /* Flash message styles */
 .alert {
     padding: 15px;
