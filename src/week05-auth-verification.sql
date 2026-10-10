@@ -14,7 +14,7 @@ BEGIN
     END IF;
 END;
 $$;
-
+rs
 CREATE TEMP TABLE week05_auth_test_user (
     user_id INTEGER PRIMARY KEY
 ) ON COMMIT DROP;

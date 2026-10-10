@@ -33,6 +33,7 @@ app.use(session({
 // Use flash message middleware
 app.use((req, res, next) => {
     res.locals.isLoggedIn = Boolean(req.session.user);
+    res.locals.user = req.session?.user || null;
     next();
 });
 

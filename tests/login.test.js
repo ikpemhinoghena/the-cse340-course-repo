@@ -12,12 +12,12 @@ import { authenticateUser, findUserByEmail, verifyPassword } from '../src/models
 test('login and logout with real session middleware and a stubbed database', async t => {
     const password = '  correct-password  ';
     const passwordHash = await bcrypt.hash(password, 10);
-    const row = { user_id: 7, name: 'Test User', email: 'test@example.invalid', password_hash: passwordHash, role_id: 2 };
-    const safeUser = { user_id: 7, name: 'Test User', email: 'test@example.invalid', role_id: 2 };
+    const row = { user_id: 7, name: 'Test User', email: 'test@example.invalid', password_hash: passwordHash, role_name: 'user' };
+    const safeUser = { user_id: 7, name: 'Test User', email: 'test@example.invalid', role_name: 'user' };
     const originalQuery = db.query;
     let failDatabase = false;
     db.query = async (sql, params) => {
-        assert.equal(sql, 'SELECT user_id, name, email, password_hash, role_id FROM users WHERE email = $1');
+        assert.equal(sql, 'SELECT u.user_id, u.name, u.email, u.password_hash, r.role_name FROM users u JOIN roles r ON u.role_id = r.role_id WHERE u.email = $1');
         if (failDatabase) throw new Error('Sensitive database error');
         return { rows: params[0] === row.email ? [row] : [] };
     };
@@ -28,6 +28,7 @@ test('login and logout with real session middleware and a stubbed database', asy
     app.use(session({ secret: 'local-test-only-session-secret', store, resave: false, saveUninitialized: true }));
     app.use((req, res, next) => {
         res.locals.isLoggedIn = Boolean(req.session.user);
+        res.locals.user = req.session.user || null;
         res.locals.NODE_ENV = 'production';
         next();
     });
@@ -60,6 +61,21 @@ test('login and logout with real session middleware and a stubbed database', asy
         assert.equal(await verifyPassword(password, passwordHash), true);
         assert.deepEqual(await authenticateUser(row.email, password), safeUser);
         assert.equal(row.password_hash, passwordHash);
+    });
+
+    await t.test('existing grading password authenticates with the admin role', async () => {
+        const original = { ...row };
+        Object.assign(row, { email: 'admin@example.com', role_name: 'admin', password_hash: await bcrypt.hash('cse340!', 10) });
+        try {
+            const response = await request('/login', { email: row.email, password: 'cse340!' });
+            assert.equal(response.headers.get('location'), '/dashboard');
+            const user = Object.values(await sessions())[0].user;
+            assert.equal(user.role_name, 'admin');
+            assert.ok(!('password_hash' in user));
+            await request('/logout');
+        } finally {
+            Object.assign(row, original);
+        }
     });
 
     await t.test('GET renders accessible login fields and logged-out navigation', async () => {

@@ -91,6 +91,23 @@ test('registration workflow with a stubbed database (no database connections)', 
         assert.deepEqual(messages, [{ type: 'success', message: 'Registration successful! Please log in.' }]);
     });
 
+    await t.test('every registration requires eight characters, including the grading email', async () => {
+        for (const fields of [
+            { email: 'other@example.com', password: 'cse340!' },
+            { email: 'admin@example.com', password: 'cse340!' },
+            { email: 'admin@example.com', password: 'cse340?' },
+            { email: 'admin@example.com', password: 'cse340' }
+        ]) {
+            const rejected = await post({ name: 'Test User', ...fields });
+            assert.equal(rejected.headers.get('location'), '/register');
+            assert.equal(queries.length, 0);
+            assert.equal(messages[0].type, 'error');
+        }
+        const accepted = await post({ name: 'Test User', email: 'admin@example.com', password: '12345678' });
+        assert.equal(accepted.headers.get('location'), '/');
+        assert.equal(queries.length, 1);
+    });
+
     await t.test('duplicate email and database failures produce safe flash messages', async () => {
         for (const code of ['23505', '08006']) {
             databaseResult = Object.assign(new Error('sensitive database details'), { code });
