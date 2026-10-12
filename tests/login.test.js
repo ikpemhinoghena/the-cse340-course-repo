@@ -17,6 +17,10 @@ test('login and logout with real session middleware and a stubbed database', asy
     const originalQuery = db.query;
     let failDatabase = false;
     db.query = async (sql, params) => {
+        if (sql.includes('FROM public.project_volunteer')) {
+            assert.deepEqual(params, [row.user_id]);
+            return { rows: [] };
+        }
         assert.equal(sql, 'SELECT u.user_id, u.name, u.email, u.password_hash, r.role_name FROM users u JOIN roles r ON u.role_id = r.role_id WHERE u.email = $1');
         if (failDatabase) throw new Error('Sensitive database error');
         return { rows: params[0] === row.email ? [row] : [] };

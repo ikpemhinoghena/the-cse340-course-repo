@@ -2,6 +2,43 @@ import { getUpcomingProjects, getProjectDetails, createProject, updateProject } 
 import { getCategoriesByProjectId } from '../models/categories.js';
 import { getAllOrganizations } from '../models/organizations.js';
 import { body, validationResult } from 'express-validator';
+import { addVolunteer, removeVolunteer, isVolunteer } from '../models/volunteers.js';
+
+const validateVolunteerProjectId = (req, res, next) => {
+    const id = req.params.id;
+    if (!/^[1-9]\d*$/.test(id) || Number(id) > 2147483647) {
+        return res.status(400).send('Invalid project ID.');
+    }
+    next();
+};
+
+const requireProject = async (projectId) => {
+    const project = await getProjectDetails(projectId);
+    if (!project) {
+        const error = new Error('Project not found');
+        error.status = 404;
+        throw error;
+    }
+    return project;
+};
+
+const processVolunteerSignup = async (req, res) => {
+    const projectId = req.params.id;
+    await requireProject(projectId);
+    const added = await addVolunteer(req.session.user.user_id, projectId);
+    req.flash(added ? 'success' : 'info', added
+        ? 'You have volunteered for this project!' : 'You are already volunteering for this project.');
+    res.redirect(`/project/${projectId}`);
+};
+
+const processVolunteerRemoval = async (req, res) => {
+    const projectId = req.params.id;
+    await requireProject(projectId);
+    const removed = await removeVolunteer(req.session.user.user_id, projectId);
+    req.flash(removed ? 'success' : 'info', removed
+        ? 'Your volunteer signup has been removed.' : 'You are not volunteering for this project.');
+    res.redirect('/dashboard');
+};
 
 const projectValidation = [
     body('title')
@@ -34,10 +71,12 @@ const showProjectsPage = async (req, res) => {
 
 const showProjectDetailsPage = async (req, res) => {
     const projectId = req.params.id;
-    const project = await getProjectDetails(projectId);
+    const project = await requireProject(projectId);
     const categories = await getCategoriesByProjectId(projectId);
+    const volunteered = req.session?.user
+        ? await isVolunteer(req.session.user.user_id, projectId) : false;
     const title = 'Service Project Details';
-    res.render('project', { title, project, categories });
+    res.render('project', { title, project, categories, volunteered });
 };
 
 const showNewProjectForm = async (req, res) => {
@@ -119,3 +158,4 @@ const processEditProjectForm = async (req, res) => {
 };
 
 export { showProjectsPage, showProjectDetailsPage, showNewProjectForm, processNewProjectForm, projectValidation, showEditProjectForm, processEditProjectForm };
+export { validateVolunteerProjectId, processVolunteerSignup, processVolunteerRemoval };

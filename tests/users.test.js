@@ -16,6 +16,7 @@ test('Users page access, safe rendering, and dashboard navigation', async t => {
     let fail = false;
     let queries = 0;
     db.query = async sql => {
+        if (sql.includes('FROM public.project_volunteer')) return { rows: [] };
         queries++;
         assert.equal(sql.replace(/\s+/g, ' ').trim(), 'SELECT u.name, u.email, r.role_name FROM users u JOIN roles r ON u.role_id = r.role_id ORDER BY u.name, u.email;');
         if (fail) throw new Error('test database failure');
@@ -59,7 +60,7 @@ test('Users page access, safe rendering, and dashboard navigation', async t => {
         assert.doesNotMatch(html, /href="\/users"/);
     });
     await t.test('regular users go to dashboard with flash and no Users link', async () => {
-        identity = { name: 'Ordinary User', email: 'user@example.com', role_name: 'user' };
+        identity = { user_id: 7, name: 'Ordinary User', email: 'user@example.com', role_name: 'user' };
         const response = await request('/users?role_name=admin');
         assert.equal(response.status, 302);
         assert.equal(response.headers.get('location'), '/dashboard');
@@ -72,7 +73,7 @@ test('Users page access, safe rendering, and dashboard navigation', async t => {
         assert.doesNotMatch(html, /href="\/users"/);
     });
     await t.test('admins see the dashboard link and all escaped user rows without hashes', async () => {
-        identity = { name: 'Admin', email: 'admin@example.com', role_name: 'admin' };
+        identity = { user_id: 8, name: 'Admin', email: 'admin@example.com', role_name: 'admin' };
         assert.match(await (await request('/dashboard')).text(), /href="\/users"/);
         const response = await request('/users');
         assert.equal(response.status, 200);

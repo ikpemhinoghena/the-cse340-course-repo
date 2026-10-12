@@ -1,4 +1,6 @@
 import express from 'express';
+import { volunteerCsrfToken, requireVolunteerCsrf } from './middleware/volunteer-csrf.js';
+import { validateVolunteerProjectId, processVolunteerSignup, processVolunteerRemoval } from './controllers/projects.js';
 import { showHomePage } from './controllers/index.js';
 import { showOrganizationsPage, showOrganizationDetailsPage, showNewOrganizationForm, processNewOrganizationForm, organizationValidation, showEditOrganizationForm, processEditOrganizationForm } from './controllers/organizations.js';
 import { showProjectsPage, showProjectDetailsPage, showNewProjectForm, processNewProjectForm, projectValidation, showEditProjectForm, processEditProjectForm } from './controllers/projects.js';
@@ -14,7 +16,7 @@ router.post('/register', userRegistrationValidation, processUserRegistrationForm
 router.get('/login', showLoginForm);
 router.post('/login', processLoginForm);
 router.get('/logout', processLogout);
-router.get('/dashboard', requireLogin, showDashboard);
+router.get('/dashboard', requireLogin, volunteerCsrfToken, showDashboard);
 router.get('/users', requireLogin, requireRole('admin', '/dashboard'), showUsersPage);
 router.get('/organizations', showOrganizationsPage);
 router.get('/organization/:id', showOrganizationDetailsPage);
@@ -31,7 +33,9 @@ router.post(
     processNewOrganizationForm
 );
 router.get('/projects', showProjectsPage);
-router.get('/project/:id', showProjectDetailsPage);
+router.get('/project/:id', validateVolunteerProjectId, volunteerCsrfToken, showProjectDetailsPage);
+router.post('/project/:id/volunteer', requireLogin, requireVolunteerCsrf, validateVolunteerProjectId, processVolunteerSignup);
+router.post('/project/:id/volunteer/remove', requireLogin, requireVolunteerCsrf, validateVolunteerProjectId, processVolunteerRemoval);
 router.get('/edit-project/:id', requireRole('admin'), showEditProjectForm);
 router.post(
     '/edit-project/:id', requireRole('admin'),

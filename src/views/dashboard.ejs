@@ -7,5 +7,24 @@
     <% if (user && user.role_name === 'admin') { %>
         <p><a href="/users">View Users</a></p>
     <% } %>
+    <h2>My Volunteered Projects</h2>
+    <% if (volunteeredProjects.length === 0) { %>
+        <p>You have not volunteered for any projects yet.</p>
+    <% } else { %>
+        <ul>
+            <% volunteeredProjects.forEach(project => { %>
+                <li>
+                    <a href="/project/<%= project.project_id %>"><%= project.title %></a>
+                    <p>Date: <%= new Date(project.date).toLocaleDateString() %></p>
+                    <p>Location: <%= project.location %></p>
+                    <p>Organization: <%= project.organization_name %></p>
+                    <form action="/project/<%= project.project_id %>/volunteer/remove" method="POST">
+                        <input type="hidden" name="volunteerCsrfToken" value="<%= volunteerCsrfToken %>">
+                        <button type="submit">Cancel signup</button>
+                    </form>
+                </li>
+            <% }); %>
+        </ul>
+    <% } %>
 </main>
 <%- include('partials/footer') %>

@@ -9,6 +9,22 @@
     <p>Location: <%= project.location %></p>
     <p>Organization: <a href="/organization/<%= project.organization_id %>"><%= project.organization_name %></a></p>
 
+    <% if (user) { %>
+        <h3>Volunteer</h3>
+        <% if (volunteered) { %>
+            <p>You are volunteering for this project.</p>
+            <form action="/project/<%= project.project_id %>/volunteer/remove" method="POST">
+                <input type="hidden" name="volunteerCsrfToken" value="<%= volunteerCsrfToken %>">
+                <button type="submit">Cancel signup</button>
+            </form>
+        <% } else { %>
+            <form action="/project/<%= project.project_id %>/volunteer" method="POST">
+                <input type="hidden" name="volunteerCsrfToken" value="<%= volunteerCsrfToken %>">
+                <button type="submit">Volunteer</button>
+            </form>
+        <% } %>
+    <% } %>
+
     <h3>Categories</h3>
     <ul>
         <% categories.forEach(category => { %>

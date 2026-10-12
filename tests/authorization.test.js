@@ -50,7 +50,7 @@ test('management authorization and public views with a stubbed database', async 
     const fields = { name: 'Valid name', description: 'Description', contactEmail: 'contact@example.com', title: 'Valid title', location: 'Campus', date: '2026-10-10', organizationId: '1', categoryIds: '1', logoFilename: 'logo.png', role_name: 'admin' };
     const request = (path, method = 'GET', body = fields) => fetch(base + path, { method, redirect: 'manual', ...(method === 'POST' ? { body: new URLSearchParams(body) } : {}) });
 
-    for (const identity of [null, { role_name: 'user' }, { role_name: 'admin' }]) {
+    for (const identity of [null, { user_id: 7, role_name: 'user' }, { user_id: 8, role_name: 'admin' }]) {
         user = identity;
         const admin = user?.role_name === 'admin';
         await t.test(`${user?.role_name || 'guest'} management access`, async () => {
